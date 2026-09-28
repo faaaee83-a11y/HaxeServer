@@ -1,0 +1,12 @@
+{
+  "name": "haxe-compile-server",
+  "version": "1.0.0",
+  "description": "Compile Haxe source to JS over HTTP, for use from Swift Playgrounds (WKWebView).",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

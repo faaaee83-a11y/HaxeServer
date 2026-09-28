@@ -1,0 +1,15 @@
+{
+  "name": "haxe-compile-server",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "features": {
+    "ghcr.io/devcontainers-contrib/features/haxe:1": {}
+  },
+  "postCreateCommand": "npm install",
+  "forwardPorts": [8080],
+  "portsAttributes": {
+    "8080": {
+      "label": "haxe-compile-server",
+      "onAutoForward": "openPreview"
+    }
+  }
+}
