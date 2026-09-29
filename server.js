@@ -23,19 +23,38 @@ app.get("/", (_req, res) => {
   res.json({ status: "ok", message: "haxe-compile-server is running" });
 });
 
+// haxelibのライブラリ名として許容する文字だけを通す（コマンド引数としての安全対策）
+const LIB_NAME_RE = /^[A-Za-z0-9_.\-]+$/;
+
 // POST /compile
-// body: { "code": "class Main { static function main() { trace('hi'); } }", "main": "Main" }
+// body: {
+//   "code": "class Main { static function main() { trace('hi'); } }",
+//   "main": "Main",
+//   "libs": ["flixel"]   // haxelibでインストール済みのライブラリ名（省略可）
+// }
 // 戻り値:
 //   成功時: { "ok": true, "js": "コンパイルされたJSコード全体" }
 //   失敗時: { "ok": false, "error": "haxeコンパイラのエラーメッセージ" }
 app.post("/compile", async (req, res) => {
-  const { code, main } = req.body || {};
+  const { code, main, libs } = req.body || {};
 
   if (typeof code !== "string" || code.trim().length === 0) {
     return res.status(400).json({ ok: false, error: "'code' (string) is required" });
   }
 
   const mainClass = typeof main === "string" && main.trim() ? main.trim() : "Main";
+
+  let libList = [];
+  if (libs !== undefined) {
+    if (!Array.isArray(libs) || !libs.every((l) => typeof l === "string")) {
+      return res.status(400).json({ ok: false, error: "'libs' must be an array of strings" });
+    }
+    libList = libs.map((l) => l.trim()).filter(Boolean);
+    const invalid = libList.find((l) => !LIB_NAME_RE.test(l));
+    if (invalid) {
+      return res.status(400).json({ ok: false, error: `invalid lib name: ${invalid}` });
+    }
+  }
 
   // 同時リクエストがぶつからないよう、リクエストごとに一時ディレクトリを作る
   const workDir = await fs.mkdtemp(path.join(os.tmpdir(), "haxe-"));
@@ -45,7 +64,7 @@ app.post("/compile", async (req, res) => {
   try {
     await fs.writeFile(srcPath, code, "utf8");
 
-    await runHaxe(workDir, mainClass, outPath);
+    await runHaxe(workDir, mainClass, outPath, libList);
 
     const js = await fs.readFile(outPath, "utf8");
     res.json({ ok: true, js });
@@ -58,9 +77,10 @@ app.post("/compile", async (req, res) => {
   }
 });
 
-function runHaxe(cwd, mainClass, outPath) {
+function runHaxe(cwd, mainClass, outPath, libList) {
   return new Promise((resolve, reject) => {
-    const args = ["-js", outPath, "-main", mainClass];
+    const libArgs = libList.flatMap((lib) => ["-lib", lib]);
+    const args = ["-js", outPath, "-main", mainClass, ...libArgs];
     execFile(
       "haxe",
       args,
