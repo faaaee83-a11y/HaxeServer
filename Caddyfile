@@ -1,0 +1,8 @@
+# HTTPSで公開する場合の例（ドメインが必要）。
+# apt install caddy のあと /etc/caddy/Caddyfile に置いて systemctl reload caddy
+fnf.example.com {
+    request_body {
+        max_size 300MB   # modのzipアップロード用
+    }
+    reverse_proxy localhost:8080
+}

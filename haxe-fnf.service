@@ -1,0 +1,13 @@
+[Unit]
+Description=Haxe compile server + FNF HTML5 builder
+After=network.target
+
+[Service]
+User=fnf
+WorkingDirectory=/opt/haxe-fnf
+EnvironmentFile=/etc/haxe-fnf.env
+ExecStart=/usr/bin/node /opt/haxe-fnf/server.js
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
